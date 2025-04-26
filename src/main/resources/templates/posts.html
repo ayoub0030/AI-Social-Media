@@ -133,6 +133,7 @@
         <!-- Add New Post Button -->
         <div class="col-md-4 text-right">
             <a th:href="@{/posts/new}" class="btn btn-success">Add New Post</a>
+            <a th:href="@{/posts/generate-ai}" class="btn btn-primary ml-2">Generate AI Post</a>
         </div>
     </div>
 
@@ -197,4 +198,9 @@
         <span th:if="${totalItems > 0}">
             Showing <span th:text="${currentPage * pageSize + 1}"></span> to
             <span th:text="${currentPage * pageSize + posts.size()}"></span> of
-            <
+            <span th:text="${totalItems}"></span> posts
+        </span>
+    </div>
+</div>
+</body>
+</html>

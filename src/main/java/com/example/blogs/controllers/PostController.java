@@ -1,4 +1,5 @@
 package com.example.blogs.controllers;
+import com.example.blogs.Services.GeminiAiService;
 import com.example.blogs.Services.PostService;
 import com.example.blogs.models.Post;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +14,10 @@ import java.util.List;
 public class PostController {
     @Autowired
     private PostService postService;
-
+    
+    @Autowired
+    private GeminiAiService geminiAiService;
+    
     @PostConstruct
     public void init() {
         // Initialize sample data at startup
@@ -89,6 +93,13 @@ public class PostController {
     @GetMapping("/posts/delete/{id}")
     public String deletePost(@PathVariable int id) {
         postService.deletePost(id);
+        return "redirect:/posts";
+    }
+    
+    // New endpoint for generating an AI post
+    @GetMapping("/posts/generate-ai")
+    public String generateAiPost() {
+        geminiAiService.generatePost();
         return "redirect:/posts";
     }
 }
