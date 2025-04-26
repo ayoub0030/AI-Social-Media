@@ -1,6 +1,8 @@
 package com.example.blogs.Services;
 
 import com.example.blogs.models.Post;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,10 +24,12 @@ public class GeminiAiService {
 
     private final PostService postService;
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper;
 
     public GeminiAiService(PostService postService) {
         this.postService = postService;
         this.restTemplate = new RestTemplate();
+        this.objectMapper = new ObjectMapper();
     }
 
     public Post generatePost() {
@@ -41,7 +45,7 @@ public class GeminiAiService {
                     "    {\n" +
                     "      \"parts\": [\n" +
                     "        {\n" +
-                    "          \"text\": \"Generate a short social media post about technology or AI. The post should be informative and engaging. Format your response with a title followed by a vertical bar (|) and then the content. For example: 'Exciting New AI Developments | Here are some recent breakthroughs...'\"\n" +
+                    "          \"text\": \"Generate a short social media post about technology or AI make it funy . The post should be informative and engaging. Format your response with a title followed by a vertical bar (|) and then the content. For example: 'Exciting New AI Developments | Here are some recent breakthroughs...'\"\n" +
                     "        }\n" +
                     "      ]\n" +
                     "    }\n" +
@@ -61,30 +65,23 @@ public class GeminiAiService {
             
             System.out.println("Gemini API Response: " + responseBody);
 
-            // Parse the response to extract the generated text
-            // This is a simplified parsing - just looking for the text field
-            String generatedText = "";
-            if (responseBody != null && responseBody.contains("\"text\"")) {
-                int startIndex = responseBody.indexOf("\"text\"") + 7;
-                int endIndex = responseBody.indexOf("\"", startIndex + 1);
-                if (startIndex > 0 && endIndex > 0) {
-                    generatedText = responseBody.substring(startIndex + 1, endIndex);
-                } else {
-                    // Alternative parsing if the structure is different
-                    startIndex = responseBody.indexOf("\"content\"");
-                    if (startIndex > 0) {
-                        startIndex = responseBody.indexOf("\"text\"", startIndex);
-                        if (startIndex > 0) {
-                            startIndex += 7; // "text":"
-                            endIndex = responseBody.indexOf("\"", startIndex + 1);
-                            generatedText = responseBody.substring(startIndex + 1, endIndex);
-                        }
-                    }
-                }
-            }
+            // Parse the response using Jackson (proper JSON parsing)
+            JsonNode rootNode = objectMapper.readTree(responseBody);
+            
+            // Extract the text field from the nested structure
+            String generatedText = rootNode
+                .path("candidates")
+                .path(0)
+                .path("content")
+                .path("parts")
+                .path(0)
+                .path("text")
+                .asText();
+            
+            System.out.println("Extracted text: " + generatedText);
 
             // If we successfully got text, create a post
-            if (!generatedText.isEmpty()) {
+            if (generatedText != null && !generatedText.isEmpty()) {
                 // Split the response into title and content
                 String[] parts = generatedText.split("\\|", 2);
                 String title = parts.length > 1 ? parts[0].trim() : "AI Generated Post";
