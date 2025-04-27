@@ -39,17 +39,46 @@ public class GeminiAiService {
             
             System.out.println("Using API URL: " + apiUrl);
             
-            // Simplified request payload
+            // Add randomness to each request to prevent caching
+            long timestamp = System.currentTimeMillis();
+            int randomSeed = (int)(Math.random() * 10000);
+            
+            // Choose a topic randomly from this list to enforce diversity
+            String[] topics = {
+                "artificial intelligence ethics", 
+                "quantum computing breakthroughs", 
+                "blockchain innovations", 
+                "space tourism developments", 
+                "virtual reality education", 
+                "renewable energy technology", 
+                "cybersecurity trends", 
+                "biotechnology advances", 
+                "smart city infrastructure", 
+                "digital art and NFTs"
+            };
+            
+            // Select a random topic
+            int topicIndex = (int)(Math.random() * topics.length);
+            String selectedTopic = topics[topicIndex];
+            
+            // Enhanced prompt with anti-repetition measures
             String requestBody = "{\n" +
                     "  \"contents\": [\n" +
                     "    {\n" +
                     "      \"parts\": [\n" +
                     "        {\n" +
-                    "          \"text\": \"Generate a short social media post about technology or AI make it funy . The post should be informative and engaging. Format your response with a title followed by a vertical bar (|) and then the content. For example: 'Exciting New AI Developments | Here are some recent breakthroughs...'\"\n" +
+                    "          \"text\": \"Generate a completely unique social media post about " + selectedTopic + ". DO NOT write about robotic bees or pollination! This is request #" + timestamp + "-" + randomSeed + ".\\n\\nThe post must have exactly these two parts separated by a vertical bar (|):\\n1. A catchy, specific title (5-8 words) that has never been used before\\n2. Engaging content (2-3 sentences) with relevant hashtags at the end\\n\\nFormat exactly as: 'Unique Title | Content with hashtags'\"\n" +
                     "        }\n" +
                     "      ]\n" +
                     "    }\n" +
-                    "  ]\n" +
+                    "  ],\n" +
+                    "  \"generationConfig\": {\n" +
+                    "    \"temperature\": 1.0,\n" +
+                    "    \"topK\": 40,\n" +
+                    "    \"topP\": 0.95,\n" +
+                    "    \"candidateCount\": 1,\n" +
+                    "    \"maxOutputTokens\": 200\n" +
+                    "  }\n" +
                     "}";
 
             // Set headers
