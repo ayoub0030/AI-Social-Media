@@ -226,6 +226,17 @@
             color: var(--white);
         }
         
+        .btn-comment {
+            background-color: var(--secondary);
+            color: var(--primary-dark);
+        }
+        
+        .btn-comment:hover {
+            background-color: var(--primary-light);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+        
         .pagination .page-link {
             color: var(--primary);
             border-radius: 50px;
@@ -334,7 +345,9 @@
                         </a>
                     </div>
                     <div>
-                      
+                        <a th:href="@{/posts/view/{id}(id=${post.id})}" class="btn btn-action btn-comment">
+                            <i class="far fa-comment mr-1"></i> Comment
+                        </a>
                         <a th:href="@{/posts/delete/{id}(id=${post.id})}" class="btn btn-action btn-delete"
                            onclick="return confirm('Are you sure you want to delete this post?')">
                             <i class="far fa-trash-alt mr-1"></i> Delete

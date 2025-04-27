@@ -1,7 +1,9 @@
 package com.example.blogs.controllers;
 import com.example.blogs.Services.GeminiAiService;
 import com.example.blogs.Services.PostService;
+import com.example.blogs.Services.CommentService;
 import com.example.blogs.models.Post;
+import com.example.blogs.models.Comment;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -17,6 +19,9 @@ public class PostController {
     
     @Autowired
     private GeminiAiService geminiAiService;
+    
+    @Autowired
+    private CommentService commentService;
     
     @PostConstruct
     public void init() {
@@ -84,9 +89,15 @@ public class PostController {
     }
 
     @GetMapping("/posts/view/{id}")
-    public String viewPost(@PathVariable int id, Model model) {
+    public String viewPost(@PathVariable int id, Model model, 
+                          @RequestParam(required = false) String fragment) {
         Post post = postService.getPostById(id);
         model.addAttribute("post", post);
+        
+        // Add comment functionality
+        model.addAttribute("comment", new Comment());
+        model.addAttribute("comments", commentService.getCommentsByPostId(id));
+        
         return "post-view";
     }
 
@@ -125,5 +136,21 @@ public class PostController {
         
         // Default redirect to posts page
         return "redirect:/posts";
+    }
+    
+    // Add comment to a post
+    @PostMapping("/posts/{id}/comments")
+    public String addComment(@PathVariable int id, @ModelAttribute Comment comment) {
+        commentService.createComment(id, comment);
+        return "redirect:/posts/view/" + id;
+    }
+    
+    // Delete a comment
+    @GetMapping("/comments/delete/{id}")
+    public String deleteComment(@PathVariable int id) {
+        Comment comment = commentService.getCommentById(id);
+        int postId = comment.getPost().getId();
+        commentService.deleteComment(id);
+        return "redirect:/posts/view/" + postId;
     }
 }
