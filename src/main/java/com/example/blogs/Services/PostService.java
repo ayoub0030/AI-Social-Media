@@ -94,4 +94,12 @@ public class PostService {
         postRepository.deleteById(id);
         System.out.println("Article supprimé : " + post.getTitle());
     }
+    
+    // Method to like a post
+    public void likePost(int id) {
+        Post post = getPostById(id);
+        post.incrementLikes();
+        postRepository.save(post);
+        System.out.println("Post liked: " + post.getTitle() + " - Total likes: " + post.getLikesCount());
+    }
 }

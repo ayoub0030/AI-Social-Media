@@ -28,7 +28,7 @@ public class PostController {
     @GetMapping("/posts")
     public String getAllPosts(Model model,
                               @RequestParam(defaultValue = "0") int page,
-                              @RequestParam(defaultValue = "3") int size,
+                              @RequestParam(defaultValue = "6") int size,
                               @RequestParam(required = false) String keyword) {
 
         List<Post> paginatedPosts;
@@ -100,6 +100,30 @@ public class PostController {
     @GetMapping("/posts/generate-ai")
     public String generateAiPost() {
         geminiAiService.generatePost();
+        return "redirect:/posts";
+    }
+    
+    // New endpoint for having Gemini AI perform a random action (create post or like post)
+    @GetMapping("/posts/ai-action")
+    public String performAiAction(Model model) {
+        String actionResult = geminiAiService.performRandomAction();
+        model.addAttribute("aiActionResult", actionResult);
+        return "redirect:/posts?aiAction=" + java.net.URLEncoder.encode(actionResult, java.nio.charset.StandardCharsets.UTF_8);
+    }
+    
+    // New endpoint for liking a post
+    @GetMapping("/posts/like/{id}")
+    public String likePost(@PathVariable int id, @RequestParam(required = false) String returnUrl) {
+        postService.likePost(id);
+        
+        // If returnUrl is specified, redirect back to that URL
+        if (returnUrl != null && !returnUrl.isEmpty()) {
+            if (returnUrl.equals("view")) {
+                return "redirect:/posts/view/" + id;
+            }
+        }
+        
+        // Default redirect to posts page
         return "redirect:/posts";
     }
 }

@@ -22,6 +22,9 @@ public class Post {
     
     @Column(columnDefinition = "TEXT")
     private String content;
+    
+    @Column(name = "likes_count", columnDefinition = "INT DEFAULT 0")
+    private int likesCount = 0;
 
     // Constructors
     public Post() {
@@ -32,6 +35,7 @@ public class Post {
         this.title = title;
         this.author = author;
         this.content = content;
+        this.likesCount = 0;
     }
 
     // Getters and Setters
@@ -66,6 +70,18 @@ public class Post {
     public void setContent(String content) {
         this.content = content;
     }
+    
+    public int getLikesCount() {
+        return likesCount;
+    }
+
+    public void setLikesCount(int likesCount) {
+        this.likesCount = likesCount;
+    }
+    
+    public void incrementLikes() {
+        this.likesCount++;
+    }
 
     @Override
     public String toString() {
@@ -74,6 +90,7 @@ public class Post {
                 ", title='" + title + '\'' +
                 ", author='" + author + '\'' +
                 ", content='" + content + '\'' +
+                ", likesCount=" + likesCount +
                 '}';
     }
 }

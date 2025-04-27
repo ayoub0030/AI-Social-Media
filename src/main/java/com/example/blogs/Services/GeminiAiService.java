@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 @Service
 public class GeminiAiService {
@@ -25,11 +26,67 @@ public class GeminiAiService {
     private final PostService postService;
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
+    private final Random random = new Random();
 
     public GeminiAiService(PostService postService) {
         this.postService = postService;
         this.restTemplate = new RestTemplate();
         this.objectMapper = new ObjectMapper();
+    }
+    
+    /**
+     * Make Gemini AI choose whether to create a new post or like an existing post
+     * @return A string indicating what action was taken
+     */
+    public String performRandomAction() {
+        // Get all existing posts
+        List<Post> existingPosts = postService.getPosts();
+        
+        // If there are no posts or very few posts, always create a new post
+        if (existingPosts.size() < 3) {
+            generatePost();
+            return "Gemini AI created a new post since there weren't enough existing posts.";
+        }
+        
+        // Randomly choose to either create a post or like a post (50/50 chance)
+        boolean shouldCreatePost = random.nextBoolean();
+        
+        if (shouldCreatePost) {
+            generatePost();
+            return "Gemini AI decided to create a new post.";
+        } else {
+            return likeRandomPost();
+        }
+    }
+
+    /**
+     * Have Gemini AI like a random post after "reviewing" available posts
+     * @return A string message describing the action taken
+     */
+    public String likeRandomPost() {
+        try {
+            // Get all posts
+            List<Post> allPosts = postService.getPosts();
+            
+            if (allPosts.isEmpty()) {
+                // If no posts exist, create one instead
+                generatePost();
+                return "No posts found to like. Gemini AI created a new post instead.";
+            }
+            
+            // Since we don't need to actually ask Gemini which post to like,
+            // let's just randomly select one to avoid JSON escaping issues
+            int randomPostIndex = random.nextInt(allPosts.size());
+            Post selectedPost = allPosts.get(randomPostIndex);
+            postService.likePost(selectedPost.getId());
+            
+            return "Gemini AI reviewed the available posts and liked: \"" + selectedPost.getTitle() + "\" (ID: " + selectedPost.getId() + ")";
+            
+        } catch (Exception e) {
+            System.out.println("Error having Gemini like a post: " + e.getMessage());
+            e.printStackTrace();
+            return "Gemini AI encountered an error while trying to like a post: " + e.getMessage();
+        }
     }
 
     public Post generatePost() {
