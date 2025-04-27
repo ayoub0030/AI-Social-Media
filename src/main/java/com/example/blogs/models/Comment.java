@@ -28,17 +28,19 @@ public class Comment {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
     
-    @Column(name = "created_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime createdAt = LocalDateTime.now();
-
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP")
+    private LocalDateTime createdAt;
+    
     // Constructors
     public Comment() {
+        this.createdAt = LocalDateTime.now();
     }
 
     public Comment(String content, String author, Post post) {
         this.content = content;
         this.author = author;
         this.post = post;
+        this.createdAt = LocalDateTime.now();
     }
 
     // Getters and Setters
@@ -77,7 +79,7 @@ public class Comment {
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
-
+    
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }

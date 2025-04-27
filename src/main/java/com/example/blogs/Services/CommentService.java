@@ -7,6 +7,7 @@ import com.example.blogs.repositories.PostRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -38,6 +39,9 @@ public class CommentService {
         if (comment.getAuthor() == null || comment.getAuthor().isEmpty()) {
             comment.setAuthor("Anonymous");
         }
+        
+        // Explicitly set the creation time
+        comment.setCreatedAt(LocalDateTime.now());
         
         comment.setPost(post);
         Comment savedComment = commentRepository.save(comment);
