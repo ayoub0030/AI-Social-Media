@@ -74,10 +74,106 @@ public class GeminiAiService {
                 return "No posts found to like. Gemini AI created a new post instead.";
             }
             
-            // Since we don't need to actually ask Gemini which post to like,
-            // let's just randomly select one to avoid JSON escaping issues
-            int randomPostIndex = random.nextInt(allPosts.size());
-            Post selectedPost = allPosts.get(randomPostIndex);
+            // Use Gemini to "think about" which post to like
+            String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;
+            
+            // Build a list of post titles and IDs for Gemini to consider
+            // But instead of directly embedding them in the JSON, we'll create a proper structure
+            StringBuilder postListBuilder = new StringBuilder();
+            for (int i = 0; i < allPosts.size(); i++) {
+                Post post = allPosts.get(i);
+                // Add index and ID without the title to avoid JSON escaping issues
+                postListBuilder.append("Post #").append(i + 1).append(": ID ").append(post.getId()).append("\n");
+            }
+            
+            // Create a JSON node structure for the posts using Jackson to properly escape everything
+            ObjectMapper mapper = new ObjectMapper();
+            
+            // Create a JSON array to store post information
+            Map<String, Object> requestMap = new HashMap<>();
+            Map<String, Object> promptMap = new HashMap<>();
+            
+            // Construct the prompt with properly escaped post titles
+            StringBuilder promptBuilder = new StringBuilder();
+            promptBuilder.append("Here is a list of posts. Please analyze them and choose one to like:\n\n");
+            
+            for (int i = 0; i < allPosts.size(); i++) {
+                Post post = allPosts.get(i);
+                promptBuilder.append("Post #").append(i + 1).append(": ID ").append(post.getId())
+                    .append("\nTitle: \"").append(post.getTitle().replace("\"", "\\\"")).append("\"\n\n");
+            }
+            
+            promptBuilder.append("Based on the titles, which post would you like to engage with? Respond with just the post number (e.g., '3').");
+            
+            // Create the request payload using Jackson for proper JSON escaping
+            Map<String, Object> root = new HashMap<>();
+            List<Map<String, Object>> contents = new ArrayList<>();
+            Map<String, Object> content = new HashMap<>();
+            List<Map<String, Object>> parts = new ArrayList<>();
+            Map<String, Object> part = new HashMap<>();
+            
+            part.put("text", promptBuilder.toString());
+            parts.add(part);
+            content.put("parts", parts);
+            contents.add(content);
+            root.put("contents", contents);
+            
+            Map<String, Object> generationConfig = new HashMap<>();
+            generationConfig.put("temperature", 0.7);
+            generationConfig.put("maxOutputTokens", 10);
+            root.put("generationConfig", generationConfig);
+            
+            // Convert to JSON string with proper escaping
+            String requestBody = mapper.writeValueAsString(root);
+            
+            // Set headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Create request entity
+            HttpEntity<String> requestEntity = new HttpEntity<>(requestBody, headers);
+
+            // Make the API call
+            ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, requestEntity, String.class);
+            String responseBody = response.getBody();
+            
+            // Parse the response to get the post ID
+            JsonNode rootNode = objectMapper.readTree(responseBody);
+            String generatedText = rootNode
+                .path("candidates")
+                .path(0)
+                .path("content")
+                .path("parts")
+                .path(0)
+                .path("text")
+                .asText();
+            
+            System.out.println("Gemini selected: " + generatedText);
+            
+            // Try to extract post number from Gemini's response
+            int selectedPostIndex = -1;
+            try {
+                selectedPostIndex = Integer.parseInt(generatedText.trim()) - 1;
+            } catch (NumberFormatException e) {
+                // If Gemini didn't return a valid number, use regex to try to find a number
+                java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\d+");
+                java.util.regex.Matcher matcher = pattern.matcher(generatedText);
+                if (matcher.find()) {
+                    try {
+                        selectedPostIndex = Integer.parseInt(matcher.group()) - 1;
+                    } catch (NumberFormatException ex) {
+                        // Still couldn't get a valid number, will use random post
+                    }
+                }
+            }
+            
+            // If we couldn't get a valid index or it's out of bounds, pick a random post
+            if (selectedPostIndex < 0 || selectedPostIndex >= allPosts.size()) {
+                selectedPostIndex = random.nextInt(allPosts.size());
+            }
+            
+            // Get the selected post and like it
+            Post selectedPost = allPosts.get(selectedPostIndex);
             postService.likePost(selectedPost.getId());
             
             return "Gemini AI reviewed the available posts and liked: \"" + selectedPost.getTitle() + "\" (ID: " + selectedPost.getId() + ")";
@@ -85,6 +181,20 @@ public class GeminiAiService {
         } catch (Exception e) {
             System.out.println("Error having Gemini like a post: " + e.getMessage());
             e.printStackTrace();
+            
+            // Fallback to just randomly selecting a post to like if there's an error
+            try {
+                List<Post> allPosts = postService.getPosts();
+                if (!allPosts.isEmpty()) {
+                    int randomPostIndex = random.nextInt(allPosts.size());
+                    Post selectedPost = allPosts.get(randomPostIndex);
+                    postService.likePost(selectedPost.getId());
+                    return "Gemini AI encountered an issue analyzing posts, but still liked: \"" + selectedPost.getTitle() + "\" (ID: " + selectedPost.getId() + ")";
+                }
+            } catch (Exception ex) {
+                // If even the fallback fails, just return the error message
+            }
+            
             return "Gemini AI encountered an error while trying to like a post: " + e.getMessage();
         }
     }
