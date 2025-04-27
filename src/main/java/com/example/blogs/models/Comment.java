@@ -28,7 +28,7 @@ public class Comment {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
     
-    @Column(name = "created_at")
+    @Column(name = "created_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // Constructors

@@ -457,7 +457,7 @@
                                     <i class="fas fa-user"></i>
                                 </div>
                                 <div class="comment-author" th:text="${comment.author}">User</div>
-                                <div class="comment-date" th:if="${comment.createdAt != null}" th:text="${#temporals.format(comment.createdAt, 'dd MMM yyyy, HH:mm')}">01 Jan 2025</div>
+                                <div class="comment-date" th:text="${comment.createdAt != null ? #temporals.format(comment.createdAt, 'dd MMM yyyy, HH:mm') : ''}">01 Jan 2025</div>
                             </div>
                             <div class="comment-content" th:text="${comment.content}">
                                 Comment content goes here...
