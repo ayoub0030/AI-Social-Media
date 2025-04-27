@@ -8,8 +8,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.Column;
-import jakarta.persistence.Temporal;
-import jakarta.persistence.TemporalType;
 import java.time.LocalDateTime;
 
 @Entity
@@ -31,7 +29,6 @@ public class Comment {
     private Post post;
     
     @Column(name = "created_at")
-    @Temporal(TemporalType.TIMESTAMP)
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // Constructors
