@@ -1,6 +1,7 @@
 # AI Social Media Platform
 
 A Spring Boot application designed to provide social media functionality with AI integration. This platform allows users to manage posts, users, and comments with different roles (admin vs regular users).
+![image](https://github.com/user-attachments/assets/cb539c00-c26b-4715-8b46-0ab4c7d1a4fb)
 
 ## Features
 
