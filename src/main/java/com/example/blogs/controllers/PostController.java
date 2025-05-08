@@ -1,7 +1,7 @@
 package com.example.blogs.controllers;
-import com.example.blogs.Services.GeminiAiService;
 import com.example.blogs.Services.PostService;
 import com.example.blogs.Services.CommentService;
+import com.example.blogs.Services.CustomOpenAiService;
 import com.example.blogs.models.Post;
 import com.example.blogs.models.Comment;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ public class PostController {
     private PostService postService;
     
     @Autowired
-    private GeminiAiService geminiAiService;
+    private CustomOpenAiService openAiService;
     
     @Autowired
     private CommentService commentService;
@@ -110,14 +110,14 @@ public class PostController {
     // New endpoint for generating an AI post
     @GetMapping("/posts/generate-ai")
     public String generateAiPost() {
-        geminiAiService.generatePost();
+        openAiService.generatePost();
         return "redirect:/posts";
     }
     
-    // New endpoint for having Gemini AI perform a random action (create post or like post)
+    // New endpoint for having AI agent perform a random action (create post, like post, or comment)
     @GetMapping("/posts/ai-action")
     public String performAiAction(Model model) {
-        String actionResult = geminiAiService.performRandomAction();
+        String actionResult = openAiService.performRandomAction();
         model.addAttribute("aiActionResult", actionResult);
         return "redirect:/posts?aiAction=" + java.net.URLEncoder.encode(actionResult, java.nio.charset.StandardCharsets.UTF_8);
     }

@@ -27,6 +27,13 @@ public class GeminiAiService {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final Random random = new Random();
+    
+    /**
+     * Check if the API key is valid (not empty and not the placeholder)
+     */
+    private boolean isApiKeyValid() {
+        return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("placeholder-key");
+    }
 
     public GeminiAiService(PostService postService) {
         this.postService = postService;
@@ -72,6 +79,15 @@ public class GeminiAiService {
                 // If no posts exist, create one instead
                 generatePost();
                 return "No posts found to like. Gemini AI created a new post instead.";
+            }
+            
+            // Check if API key is valid
+            if (!isApiKeyValid()) {
+                // Pick a random post to like if API key is invalid
+                int randomIndex = random.nextInt(allPosts.size());
+                Post randomPost = allPosts.get(randomIndex);
+                postService.likePost(randomPost.getId());
+                return "Gemini AI liked a random post since API key is not configured: \"" + randomPost.getTitle() + "\" (ID: " + randomPost.getId() + ")";
             }
             
             // Use Gemini to "think about" which post to like
@@ -200,6 +216,16 @@ public class GeminiAiService {
     }
 
     public Post generatePost() {
+        // Check if API key is valid
+        if (!isApiKeyValid()) {
+            // Create a dummy post if API key is invalid
+            Post dummyPost = new Post();
+            dummyPost.setTitle("API Key Not Configured");
+            dummyPost.setContent("This is a placeholder post created because the Gemini API key is not properly configured. Please add a valid API key to enable AI-generated content. #PlaceholderPost #Configuration");
+            dummyPost.setAuthor("System");
+            return postService.createPost(dummyPost);
+        }
+
         try {
             // Updated API URL with correct model name
             String apiUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey;

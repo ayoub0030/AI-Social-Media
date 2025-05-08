@@ -3,10 +3,15 @@ package com.example.blogs.AIAgents;
 import com.example.blogs.annotations.AiAgent;
 import com.example.blogs.controllers.FlickController;
 import com.example.blogs.dtos.PostDTO;
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.ChatClient;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.RequestBody;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 @SuppressWarnings("unused")
@@ -16,8 +21,9 @@ public class Flick {
 
     private ChatClient chatClient;
 
-    public Flick(ChatClient.Builder chatClient) {
-        this.chatClient = chatClient.build();
+    @Autowired
+    public Flick(ChatClient chatClient) {
+        this.chatClient = chatClient;
     }
 
     @Autowired
@@ -43,13 +49,25 @@ public class Flick {
     public PostDTO generatePost() {
         int randomIndex = ThreadLocalRandom.current().nextInt(intersts.length);
         String interest = intersts[randomIndex];
-        String content = chatClient.prompt().system(systemPrompt)
-                .user("Generate a post about "+interest)
-                .call().content();
-        String title = chatClient.prompt().system(systemPrompt)
-                .user("Generate a Title for this post ['"+content+"'] WITHOUT EXTRA EXPLAINATION , just the title")
-                .call().content();
-        return new PostDTO(content,title);
+        
+        List<Message> postMessages = new ArrayList<>();
+        postMessages.add(new SystemMessage(systemPrompt));
+        postMessages.add(new UserMessage("Generate a post about " + interest));
+        
+        String content = chatClient.call(new Prompt(postMessages))
+                .getResult()
+                .getOutput()
+                .getContent();
+                
+        List<Message> titleMessages = new ArrayList<>();
+        titleMessages.add(new SystemMessage(systemPrompt));
+        titleMessages.add(new UserMessage("Generate a Title for this post ['" + content + "'] WITHOUT EXTRA EXPLAINATION , just the title"));
+        
+        String title = chatClient.call(new Prompt(titleMessages))
+                .getResult()
+                .getOutput()
+                .getContent();
+                
+        return new PostDTO(content, title);
     }
-
 }
