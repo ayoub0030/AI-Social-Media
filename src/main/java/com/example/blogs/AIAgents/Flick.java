@@ -132,6 +132,89 @@ public class Flick {
     }
     
     /**
+     * Analyzes a list of posts and selects which one to comment on based on Flick's interests
+     * 
+     * @param availablePosts List of posts that Flick can potentially comment on
+     * @return A selected Post and the generated comment for it, or null if no suitable post found
+     */
+    public PostCommentChoice selectPostToComment(List<Post> availablePosts) {
+        if (availablePosts == null || availablePosts.isEmpty()) {
+            return null; // No posts to comment on
+        }
+        
+        // If there are just a few posts, use a simplified selection
+        if (availablePosts.size() <= 3) {
+            int randomIndex = ThreadLocalRandom.current().nextInt(availablePosts.size());
+            Post selectedPost = availablePosts.get(randomIndex);
+            String comment = generateComment(selectedPost);
+            return new PostCommentChoice(selectedPost, comment);
+        }
+        
+        // For more posts, use AI to analyze the posts and decide which to comment on
+        StringBuilder postsDescription = new StringBuilder();
+        postsDescription.append("Here are some posts on your social media feed. Choose ONE post to comment on based on your interests and personality:\n\n");
+        
+        // Add descriptions of posts for the AI to consider
+        for (int i = 0; i < availablePosts.size(); i++) {
+            Post post = availablePosts.get(i);
+            postsDescription.append(i + 1).append(". Title: \"").append(post.getTitle())
+                     .append("\", Content: \"").append(post.getContent().substring(0, Math.min(100, post.getContent().length())))
+                     .append(post.getContent().length() > 100 ? "..." : "").append("\", by ").append(post.getAuthor()).append("\n\n");
+        }
+        
+        // Ask the AI to choose a post and explain why
+        List<Message> messages = new ArrayList<>();
+        messages.add(new SystemMessage(systemPrompt + "\nConsider the posts below and choose ONE that aligns with your interests, personality, or expertise. Don't comment on your own posts."));
+        messages.add(new UserMessage(postsDescription.toString() + "\nWhich post would you like to comment on and why? Just provide the number of the post and a brief reason. Format your response like this: 'Post 3 - I chose this because...' Keep it very brief."));
+        
+        String responseText;
+        try {
+            responseText = chatClient.call(new Prompt(messages))
+                    .getResult()
+                    .getOutput()
+                    .getContent();
+        } catch (Exception e) {
+            // Fallback to random selection on API error
+            int randomIndex = ThreadLocalRandom.current().nextInt(availablePosts.size());
+            Post selectedPost = availablePosts.get(randomIndex);
+            String comment = generateComment(selectedPost);
+            return new PostCommentChoice(selectedPost, comment);
+        }
+            
+        // Extract the post number from the response
+        int selectedIndex = -1;
+        try {
+            // Look for patterns like "Post 3" or just the number
+            if (responseText.contains("Post ")) {
+                String[] parts = responseText.split("Post ");
+                if (parts.length > 1) {
+                    String numberPart = parts[1].trim().split("[^0-9]")[0];
+                    selectedIndex = Integer.parseInt(numberPart) - 1;
+                }
+            } else {
+                // Try to find any number
+                selectedIndex = Integer.parseInt(responseText.replaceAll("[^0-9]", "").substring(0, 1)) - 1;
+            }
+        } catch (Exception e) {
+            // If parsing fails, fall back to random selection
+            selectedIndex = ThreadLocalRandom.current().nextInt(availablePosts.size());
+        }
+            
+        // Validate the index and generate a comment
+        if (selectedIndex >= 0 && selectedIndex < availablePosts.size()) {
+            Post selectedPost = availablePosts.get(selectedIndex);
+            String comment = generateComment(selectedPost);
+            return new PostCommentChoice(selectedPost, comment);
+        } else {
+            // Fallback to random if parsing fails
+            int randomIndex = ThreadLocalRandom.current().nextInt(availablePosts.size());
+            Post selectedPost = availablePosts.get(randomIndex);
+            String comment = generateComment(selectedPost);
+            return new PostCommentChoice(selectedPost, comment);
+        }
+    }
+    
+    /**
      * Generates a comment on a specific post based on Flick's personality
      * 
      * @param post The post to comment on

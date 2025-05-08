@@ -38,12 +38,7 @@ public class SpringAiConfig {
     @Value("${spring.ai.openai.chat.options.max-tokens:500}")
     private Integer maxTokens;
 
-    /**
-     * Checks if the API key is valid (not the placeholder)
-     */
-    private boolean isApiKeyValid() {
-        return apiKey != null && !apiKey.isEmpty() && !apiKey.equals("sk-placeholder-key-for-compilation-only");
-    }
+    // API key configuration is controlled by @ConditionalOnExpression annotations
 
     @Bean
     @ConditionalOnExpression("'${spring.ai.openai.api-key}' != 'sk-placeholder-key-for-compilation-only'")
@@ -105,7 +100,7 @@ public class SpringAiConfig {
                 return new ChatResponse(Collections.singletonList(generation));
             }
             
-            @Override
+            // Method to handle message-based prompts
             public ChatResponse call(List<Message> messages) {
                 // Try to determine if it's for a post or comment based on messages
                 String promptText = messages.stream()

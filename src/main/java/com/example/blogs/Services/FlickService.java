@@ -2,6 +2,7 @@ package com.example.blogs.Services;
 
 
 import com.example.blogs.AIAgents.Flick;
+import com.example.blogs.AIAgents.PostCommentChoice;
 import com.example.blogs.controllers.FlickController;
 import com.example.blogs.dtos.PostDTO;
 import com.example.blogs.models.Comment;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
+import java.util.stream.Collectors;
 
 @SuppressWarnings("unused")
 
@@ -139,7 +141,7 @@ public class FlickService {
     }
     
     /**
-     * Makes Flick comment on a randomly selected post
+     * Makes Flick intelligently select and comment on a post
      * 
      * @return A message describing what happened
      */
@@ -148,17 +150,31 @@ public class FlickService {
         List<Post> allPosts = postRepository.findAll();
         List<Post> postsNotByFlick = allPosts.stream()
             .filter(post -> !"Flick".equals(post.getAuthor()))
-            .toList();
+            .collect(Collectors.toList());
             
         if (postsNotByFlick.isEmpty()) {
             return "There are no posts for Flick to comment on.";
         }
         
-        // Select a random post to comment on
-        int randomIndex = random.nextInt(postsNotByFlick.size());
-        Post randomPost = postsNotByFlick.get(randomIndex);
+        // Let Flick analyze and select a post to comment on
+        PostCommentChoice choice = flick.selectPostToComment(postsNotByFlick);
         
-        // Comment on the selected post
-        return commentOnPost(randomPost.getId());
+        if (choice == null) {
+            return "Flick couldn't find a suitable post to comment on.";
+        }
+        
+        // Create and save the comment
+        Post selectedPost = choice.getSelectedPost();
+        String commentContent = choice.getGeneratedComment();
+        
+        Comment comment = new Comment();
+        comment.setContent(commentContent);
+        comment.setAuthor("Flick");
+        comment.setPost(selectedPost);
+        comment.setCreatedAt(LocalDateTime.now());
+        
+        commentRepository.save(comment);
+        
+        return "Flick selected and commented on post: \"" + selectedPost.getTitle() + "\": " + commentContent;
     }
 }
