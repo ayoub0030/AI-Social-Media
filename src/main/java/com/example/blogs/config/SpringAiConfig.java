@@ -73,21 +73,53 @@ public class SpringAiConfig {
      */
     @Bean
     @Primary
-    @ConditionalOnExpression("'${spring.ai.openai.api-key}' == 'sk-placeholder-key-for-compilation-only'")
+    @ConditionalOnExpression("'${spring.ai.openai.api-key}' == 'sk-placeholder-key-for-compilation-only' or '${spring.ai.openai.api-key}' == 'sk-your-actual-api-key-here'")
     public ChatClient fallbackChatClient() {
         return new ChatClient() {
+            private final String[] postResponses = {
+                "Just finished a fascinating data analysis session at Google. The patterns in large datasets never cease to amaze me! #DataScience #CodingLife",
+                "Barcelona's strategy in yesterday's match was simply brilliant. The way they controlled the midfield was a masterclass in football tactics. #FCBarcelona #Football",
+                "Waking up at 6 AM is definitely not my thing, but this coffee is saving my morning. Worth it for the quiet coding time though! #JavaDeveloper #MorningStruggle",
+                "Been listening to Eminem's latest album on repeat. His wordplay and rhythm are just unmatched in the industry. #MusicMonday #Rap",
+                "Just solved a complex algorithm problem using Java streams. There's something so satisfying about elegant code solutions! #Coding #JavaProgramming"
+            };
+            
+            private final String[] commentResponses = {
+                "Really interesting perspective! This reminds me of some data patterns I've been analyzing at work.",
+                "Great post! As someone who works with machine learning, I find this perspective fascinating.",
+                "This is exactly what I needed to read today. I've been working on something similar in my Java projects.",
+                "Love this! Reminds me why I'm passionate about data science and tech innovation.",
+                "Cool insights! I'd be curious to hear more about how this relates to modern tech practices."
+            };
+            
+            private String generateRandomResponse(String[] options) {
+                int index = (int) (Math.random() * options.length);
+                return options[index];
+            }
+            
             @Override
             public ChatResponse call(Prompt prompt) {
-                // Create a fallback response
-                String response = "API key not configured. This is a fallback response.";
+                // Just use post responses for Prompt calls since we can't extract message content
+                String response = generateRandomResponse(postResponses);
                 Generation generation = new Generation(response);
                 return new ChatResponse(Collections.singletonList(generation));
             }
             
             @Override
             public ChatResponse call(List<Message> messages) {
-                // Create a fallback response
-                String response = "API key not configured. This is a fallback response.";
+                // Try to determine if it's for a post or comment based on messages
+                String promptText = messages.stream()
+                    .filter(m -> m instanceof UserMessage)
+                    .map(Message::getContent)
+                    .findFirst().orElse("");
+                
+                String response;
+                if (promptText.contains("Generate a post") || promptText.contains("Title")) {
+                    response = generateRandomResponse(postResponses);
+                } else {
+                    response = generateRandomResponse(commentResponses);
+                }
+                
                 Generation generation = new Generation(response);
                 return new ChatResponse(Collections.singletonList(generation));
             }

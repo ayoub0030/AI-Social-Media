@@ -17,7 +17,7 @@ public class BlogsApplication {
 		// Run your task in a separate thread
 		new Thread(() -> {
 			while (true) {
-				flickController.generatePost();
+				flickController.createPost();
 				try {
 					Thread.sleep(60000); // Wait for 1 minute
 				} catch (InterruptedException e) {
